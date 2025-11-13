@@ -17,10 +17,20 @@ COPY pyproject.toml README.md LICENSE ./
 COPY src/ ./src/
 
 # Create virtual environment and install dependencies
+# First install the dependencies, then install the package
 RUN python -m venv /opt/venv && \
     . /opt/venv/bin/activate && \
     pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -e .
+    pip install --no-cache-dir \
+        fastmcp>=2.0.0 \
+        psutil>=7.0.0 \
+        fastapi>=0.115.0 \
+        uvicorn>=0.30.0 \
+        jinja2>=3.1.0 \
+        websockets>=13.0.0 \
+        aiohttp>=3.8.0 \
+        mcp>=1.9.3 && \
+    pip install --no-cache-dir --no-deps .
 
 # Runtime stage
 FROM python:3.12-slim

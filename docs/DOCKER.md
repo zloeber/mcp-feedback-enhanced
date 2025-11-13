@@ -34,6 +34,9 @@ When running in HTTP mode, the server provides:
 - Docker Compose 2.0+ (optional, but recommended)
 - 512MB RAM minimum, 1GB+ recommended
 - Network access to port 8765 (default) or your chosen port
+- Internet access to pull Python packages from PyPI
+
+**Note**: If you're in an environment with SSL inspection or certificate issues (corporate proxies, some CI/CD systems), you may need to configure Docker to trust additional certificates or use the simpler `Dockerfile.simple` which installs from PyPI (requires the package to be published).
 
 ## Quick Start
 
@@ -361,6 +364,39 @@ docker inspect --format='{{range .State.Health.Log}}{{.Output}}{{end}}' mcp-feed
 ```
 
 ## Troubleshooting
+
+### Build Issues
+
+#### SSL Certificate Errors During Build
+
+If you encounter SSL certificate verification errors during `docker build`:
+
+```
+SSL: CERTIFICATE_VERIFY_FAILED
+```
+
+**Solutions**:
+
+1. **Use Dockerfile.simple** (if package is published to PyPI):
+   ```bash
+   docker build -f Dockerfile.simple -t mcp-feedback-enhanced .
+   ```
+
+2. **Configure Docker to trust certificates** (for corporate environments):
+   ```bash
+   # Add your corporate CA certificate to the build
+   docker build --build-arg REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt -t mcp-feedback-enhanced .
+   ```
+
+3. **Use Docker BuildKit with cache from registry**:
+   ```bash
+   DOCKER_BUILDKIT=1 docker build -t mcp-feedback-enhanced .
+   ```
+
+4. **Build with no-cache** (sometimes helps with transient issues):
+   ```bash
+   docker build --no-cache -t mcp-feedback-enhanced .
+   ```
 
 ### Container Won't Start
 

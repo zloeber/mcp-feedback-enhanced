@@ -155,6 +155,32 @@ pip install uv
 - Desktop Mode: [examples/mcp-config-desktop.json](examples/mcp-config-desktop.json)
 - Web Mode: [examples/mcp-config-web.json](examples/mcp-config-web.json)
 
+### 🐳 Docker Deployment (HTTP Mode)
+
+Run the MCP server in HTTP mode using Docker for easy deployment:
+
+```bash
+# Quick start with Docker Compose
+docker compose up -d
+
+# Or build and run manually
+docker build -t mcp-feedback-enhanced .
+docker run -d \
+  --name mcp-feedback \
+  -p 8765:8765 \
+  -e MCP_TRANSPORT=sse \
+  -e MCP_WEB_HOST=0.0.0.0 \
+  mcp-feedback-enhanced
+```
+
+Access the Web UI at: `http://localhost:8765`
+
+**Supported HTTP Transports:**
+- **SSE (Server-Sent Events)**: Recommended for most use cases
+- **Streamable HTTP**: Alternative HTTP streaming protocol
+
+📖 **Full Docker Documentation**: [docs/DOCKER.md](docs/DOCKER.md)
+
 ### 3. Prompt Engineering Setup
 For optimal results, add the following rules to your AI assistant:
 
@@ -174,10 +200,17 @@ follow mcp-feedback-enhanced instructions
 | `MCP_WEB_PORT` | Web UI port | `1024-65535` | `8765` |
 | `MCP_DESKTOP_MODE` | Desktop application mode | `true`/`false` | `false` |
 | `MCP_LANGUAGE` | Force UI language | `zh-TW`/`zh-CN`/`en` | Auto-detect |
+| `MCP_TRANSPORT` | Transport protocol (HTTP mode) | `stdio`/`sse`/`streamable-http` | `stdio` |
 
 **`MCP_WEB_HOST` Explanation**:
 - `127.0.0.1` (default): Local access only, higher security
-- `0.0.0.0`: Allow remote access, suitable for SSH remote development environments
+- `0.0.0.0`: Allow remote access, suitable for SSH remote development and **Docker deployments**
+
+**`MCP_TRANSPORT` Explanation** (Docker/HTTP mode):
+- `stdio` (default): Standard MCP communication for local clients
+- `sse`: Server-Sent Events for HTTP mode (recommended for Docker)
+- `streamable-http`: Alternative HTTP streaming protocol
+- **Note**: HTTP transports automatically disable desktop mode
 
 **`MCP_LANGUAGE` Explanation**:
 - Used to force the interface language, overriding automatic system detection
