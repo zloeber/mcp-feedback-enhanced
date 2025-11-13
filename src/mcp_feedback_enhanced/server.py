@@ -612,6 +612,9 @@ def main():
     # 檢查是否啟用調試模式
     debug_enabled = os.getenv("MCP_DEBUG", "").lower() in ("true", "1", "yes", "on")
 
+    # 取得傳輸模式（從環境變數或使用預設值）
+    transport = os.getenv("MCP_TRANSPORT", "stdio")
+
     # 檢查是否啟用桌面模式
     desktop_mode = os.getenv("MCP_DESKTOP_MODE", "").lower() in (
         "true",
@@ -619,6 +622,14 @@ def main():
         "yes",
         "on",
     )
+
+    # 當使用 sse 或 streamable-http 時，強制禁用桌面模式
+    if transport in ("sse", "streamable-http") and desktop_mode:
+        desktop_mode = False
+        if debug_enabled:
+            debug_log(
+                f"⚠️  使用 {transport} 模式時不支援桌面應用，已自動切換到 Web UI 模式"
+            )
 
     if debug_enabled:
         debug_log("🚀 啟動互動式回饋收集 MCP 服務器")
@@ -628,6 +639,7 @@ def main():
         debug_log(f"   編碼初始化: {'成功' if _encoding_initialized else '失敗'}")
         debug_log(f"   遠端環境: {is_remote_environment()}")
         debug_log(f"   WSL 環境: {is_wsl_environment()}")
+        debug_log(f"   傳輸模式: {transport}")
         debug_log(f"   桌面模式: {'啟用' if desktop_mode else '禁用'}")
         debug_log("   介面類型: Web UI")
         debug_log("   等待來自 AI 助手的調用...")
@@ -635,8 +647,11 @@ def main():
         debug_log("調用 mcp.run()...")
 
     try:
-        # 使用正確的 FastMCP API
-        mcp.run()
+        # 使用正確的 FastMCP API，傳入傳輸協議
+        if transport and transport != "stdio":
+            mcp.run(transport=transport)
+        else:
+            mcp.run()
     except KeyboardInterrupt:
         if debug_enabled:
             debug_log("收到中斷信號，正常退出")
