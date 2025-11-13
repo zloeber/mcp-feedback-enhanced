@@ -40,7 +40,13 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="可用命令")
 
     # 伺服器命令（預設）
-    subparsers.add_parser("server", help="啟動 MCP 伺服器（預設）")
+    server_parser = subparsers.add_parser("server", help="啟動 MCP 伺服器（預設）")
+    server_parser.add_argument(
+        "--transport",
+        choices=["stdio", "sse", "streamable-http"],
+        default="stdio",
+        help="傳輸協議模式 (預設: stdio)。使用 sse 或 streamable-http 時僅支援 Web UI 模式",
+    )
 
     # 測試命令
     test_parser = subparsers.add_parser("test", help="執行測試")
@@ -64,15 +70,49 @@ def main():
     elif args.command == "version":
         show_version()
     elif args.command == "server" or args.command is None:
-        run_server()
+        # 從命令列參數取得傳輸模式（如果有的話）
+        transport = getattr(args, "transport", None)
+        run_server(transport=transport)
     else:
         # 不應該到達這裡
         parser.print_help()
         sys.exit(1)
 
 
-def run_server():
-    """啟動 MCP 伺服器"""
+def run_server(transport: str | None = None):
+    """啟動 MCP 伺服器
+
+    Args:
+        transport: 傳輸協議模式 ("stdio", "sse", 或 "streamable-http")
+    """
+    # 當使用 sse 或 streamable-http 時，強制禁用桌面模式
+    if transport in ("sse", "streamable-http"):
+        # 檢查是否原本啟用了桌面模式
+        desktop_was_enabled = os.getenv("MCP_DESKTOP_MODE", "").lower() in (
+            "true",
+            "1",
+            "yes",
+            "on",
+        )
+        os.environ["MCP_DESKTOP_MODE"] = "false"
+        if desktop_was_enabled and os.getenv("MCP_DEBUG", "").lower() in (
+            "true",
+            "1",
+            "yes",
+            "on",
+        ):
+            # 使用 stderr 以避免與 FastMCP 的輸出混淆
+            import sys
+
+            print(
+                f"💡 使用 {transport} 模式時，自動禁用桌面應用模式，僅支援 Web UI",
+                file=sys.stderr,
+            )
+
+    # 設置傳輸模式環境變數
+    if transport:
+        os.environ["MCP_TRANSPORT"] = transport
+
     from .server import main as server_main
 
     return server_main()
